@@ -1,0 +1,22 @@
+# Core image processing
+Pillow>=10.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# AI upscaling
+torch>=2.0.0
+torchvision>=0.15.0
+realesrgan>=0.3.0
+basicsr>=1.4.2
+
+# Google Drive
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# OpenAI (content generation — Phase 5)
+openai>=1.0.0
+
+# PSD mockups (Phase 2)
+psd-tools>=1.9.0

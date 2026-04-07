@@ -1,0 +1,28 @@
+# Output & processing
+output/
+logs/
+input/
+
+# AI model weights
+weights/
+
+# Mockup PSD files
+mockups/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Credentials & secrets
+credentials.json
+*.env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
