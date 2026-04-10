@@ -1,0 +1,64 @@
+{
+  "mockups": [
+    {
+      "id": 1,
+      "background": "bg_1.jpg",
+      "slots": [
+        {
+          "top_left":     [353, 524],
+          "top_right":    [654, 540],
+          "bottom_right": [630, 955],
+          "bottom_left":  [326, 926]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "background": "bg_2.jpg",
+      "slots": [
+        {
+          "top_left":     [480, 165],
+          "top_right":    [741, 143],
+          "bottom_right": [741, 570],
+          "bottom_left":  [480, 562]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "background": "bg_3.jpg",
+      "slots": [
+        {
+          "top_left":     [383, 245],
+          "top_right":    [606, 272],
+          "bottom_right": [606, 606],
+          "bottom_left":  [383, 616]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "background": "bg_4.jpg",
+      "slots": [
+        {
+          "top_left":     [416, 150],
+          "top_right":    [673, 149],
+          "bottom_right": [673, 510],
+          "bottom_left":  [416, 510]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "background": "bg_5.jpg",
+      "slots": [
+        {
+          "top_left":     [409, 148],
+          "top_right":    [675, 148],
+          "bottom_right": [675, 516],
+          "bottom_left":  [409, 516]
+        }
+      ]
+    }
+  ]
+}

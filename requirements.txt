@@ -15,8 +15,9 @@ google-auth>=2.23.0
 google-auth-oauthlib>=1.1.0
 google-auth-httplib2>=0.1.1
 
-# OpenAI (content generation — Phase 5)
-openai>=1.0.0
+# LLM content generation (Gemini via OpenAI-compatible endpoint)
+langchain-openai>=0.1.0
+langchain-core>=0.1.0
 
 # PSD mockups (Phase 2)
 psd-tools>=1.9.0

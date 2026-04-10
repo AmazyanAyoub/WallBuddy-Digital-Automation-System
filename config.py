@@ -10,7 +10,7 @@ MOCKUP_DIR = os.path.join(BASE_DIR, "mockups")
 # ── API Keys (fill in before use) ─────────────────────────────────────────────
 OPENAI_API_KEY           = "sk-..."
 GOOGLE_DRIVE_CREDENTIALS = os.path.join(BASE_DIR, "credentials.json")
-GOOGLE_DRIVE_FOLDER_ID   = "your-google-drive-folder-id"
+GOOGLE_DRIVE_FOLDER_ID   = "1TqkOB-QCn-NcCuLnLaSuHY55zhOPb5gA"   # replace with your actual Drive folder ID
 
 # ── Image Export Settings ──────────────────────────────────────────────────────
 JPEG_QUALITY = 92

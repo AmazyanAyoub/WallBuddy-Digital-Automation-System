@@ -6,7 +6,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import INPUT_DIR, OUTPUT_DIR, LOG_DIR
 from utils.logger import setup_logging
-from modules.image_processor import process_set
+from modules.image_processor  import process_set, get_images_in_set
+from modules.mockup_generator  import generate_mockups
+from modules.zip_creator       import create_zip
+from modules.drive_uploader    import upload_zip
+from modules.content_generator import generate_content
+from modules.csv_writer        import append_row
 
 
 def scan_sets(input_dir: str) -> list[str]:
@@ -19,13 +24,85 @@ def scan_sets(input_dir: str) -> list[str]:
 
 
 def run_set(set_folder: str) -> tuple[str, dict]:
-    """Wrapper so ThreadPoolExecutor can call process_set and return the set name with result."""
-    set_name = os.path.basename(set_folder)
+    """
+    Full pipeline for one set:
+      1. Image processing   → print_files/Print_N/ (5 JPGs each)
+      2. Mockup generation  → mockups/ (5 mockup JPGs)
+      3. ZIP creation       → set_name.zip
+      4. Google Drive upload→ public URL
+      5. Content generation → title, description, tags via Gemini
+      6. CSV row            → OUTPUT/output.csv
+    Each step is isolated — a failure logs and skips remaining steps for that set.
+    """
+    set_name    = os.path.basename(set_folder)
+    result      = {"success": False, "error": None}
+
+    # ── 1. Image processing ───────────────────────────────────────────────────
     try:
-        result = process_set(set_folder, OUTPUT_DIR)
+        logging.info(f"[{set_name}] Step 1/6 — Image processing")
+        proc   = process_set(set_folder, OUTPUT_DIR)
+        images = get_images_in_set(set_folder)
+        logging.info(f"[{set_name}] Images: {proc['success']} ok / {proc['failed']} failed")
+        if proc["success"] == 0:
+            raise RuntimeError("No images processed successfully")
     except Exception as e:
-        logging.error(f"[{set_name}] Unhandled error: {e}")
-        result = {"total": 0, "success": 0, "failed": 1}
+        logging.error(f"[{set_name}] Image processing failed: {e}")
+        result["error"] = str(e)
+        return set_name, result
+
+    # ── 2. Mockup generation ──────────────────────────────────────────────────
+    try:
+        logging.info(f"[{set_name}] Step 2/6 — Mockup generation")
+        mockup_paths = generate_mockups(set_folder, images, OUTPUT_DIR)
+        logging.info(f"[{set_name}] {len(mockup_paths)} mockup(s) generated")
+    except Exception as e:
+        logging.error(f"[{set_name}] Mockup generation failed: {e}")
+        # Non-fatal — continue pipeline without mockups
+
+    # ── 3. ZIP creation ───────────────────────────────────────────────────────
+    try:
+        logging.info(f"[{set_name}] Step 3/6 — ZIP creation")
+        zip_path = create_zip(set_folder, OUTPUT_DIR)
+    except Exception as e:
+        logging.error(f"[{set_name}] ZIP creation failed: {e}")
+        result["error"] = str(e)
+        return set_name, result
+
+    # ── 4. Google Drive upload ────────────────────────────────────────────────
+    try:
+        logging.info(f"[{set_name}] Step 4/6 — Google Drive upload")
+        drive_link = upload_zip(zip_path)
+    except Exception as e:
+        logging.error(f"[{set_name}] Drive upload failed: {e}")
+        result["error"] = str(e)
+        return set_name, result
+
+    # ── 5. Content generation ─────────────────────────────────────────────────
+    try:
+        logging.info(f"[{set_name}] Step 5/6 — Content generation")
+        content = generate_content(set_name, len(images))
+    except Exception as e:
+        logging.error(f"[{set_name}] Content generation failed: {e}")
+        result["error"] = str(e)
+        return set_name, result
+
+    # ── 6. CSV row ────────────────────────────────────────────────────────────
+    try:
+        logging.info(f"[{set_name}] Step 6/6 — Writing CSV row")
+        append_row(
+            set_name   = set_name,
+            title      = content["title"],
+            description= content["description"],
+            tags       = content["tags"],
+            drive_link = drive_link,
+        )
+    except Exception as e:
+        logging.error(f"[{set_name}] CSV write failed: {e}")
+        result["error"] = str(e)
+        return set_name, result
+
+    result["success"] = True
+    logging.info(f"[{set_name}] Pipeline complete")
     return set_name, result
 
 
@@ -39,31 +116,25 @@ def main():
 
     logging.info(f"Found {len(sets)} set(s) to process")
 
-    total_sets    = len(sets)
-    sets_ok       = 0
-    sets_failed   = 0
-    images_ok     = 0
-    images_failed = 0
+    total   = len(sets)
+    success = 0
+    failed  = 0
 
-    # Process sets in parallel (safe: each set writes to its own output folder)
-    max_workers = min(4, total_sets)   # cap at 4 — Real-ESRGAN is GPU/CPU heavy
+    max_workers = min(4, total)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(run_set, s): s for s in sets}
         for future in as_completed(futures):
             set_name, result = future.result()
-            images_ok     += result["success"]
-            images_failed += result["failed"]
-            if result["failed"] == 0 and result["total"] > 0:
-                sets_ok += 1
-            elif result["total"] == 0:
-                sets_failed += 1
+            if result["success"]:
+                success += 1
             else:
-                sets_failed += 1
+                failed += 1
+                logging.error(f"[{set_name}] Failed at: {result['error']}")
 
     logging.info(
         f"\n{'='*50}\n"
-        f"  Sets    : {sets_ok} ok / {sets_failed} with errors / {total_sets} total\n"
-        f"  Images  : {images_ok} ok / {images_failed} failed\n"
+        f"  Sets : {success} complete / {failed} failed / {total} total\n"
+        f"  CSV  : {os.path.join(OUTPUT_DIR, 'output.csv')}\n"
         f"{'='*50}"
     )
 
