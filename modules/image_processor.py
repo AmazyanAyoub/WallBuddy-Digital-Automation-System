@@ -145,40 +145,14 @@ def load_as_numpy(image_path: str) -> np.ndarray:
 
 # ── 4. Center-crop resize ─────────────────────────────────────────────────────
 
-def center_crop_resize(img_array: np.ndarray, target_w: int, target_h: int) -> Image.Image:
+def fit_and_pad(img_array: np.ndarray, target_w: int, target_h: int) -> Image.Image:
     """
-    Resizes image to exactly (target_w, target_h) using center-crop logic:
-    1. Scale image so the shorter dimension matches the target (fills the canvas).
-    2. Crop excess from center.
-    3. Final Lanczos4 resize to exact pixels (handles any sub-pixel rounding).
-    Never stretches — aspect ratio is maintained until the crop.
+    Resizes image to exactly (target_w, target_h). No cropping, no padding, no blur.
     Returns a PIL Image in RGB mode.
     """
-    src_h, src_w = img_array.shape[:2]
-
-    # Scale factor: the LARGER ratio ensures the image fills the canvas on both axes
-    scale = max(target_w / src_w, target_h / src_h)
-
-    scaled_w = round(src_w * scale)
-    scaled_h = round(src_h * scale)
-
-    # Scale up to fill
-    scaled = cv2.resize(img_array, (scaled_w, scaled_h), interpolation=cv2.INTER_LANCZOS4)
-
-    # Center crop
-    x_start = (scaled_w - target_w) // 2
-    y_start = (scaled_h - target_h) // 2
-    cropped = scaled[y_start:y_start + target_h, x_start:x_start + target_w]
-
-    # Safety: exact resize in case of rounding drift (1–2px)
-    if cropped.shape[1] != target_w or cropped.shape[0] != target_h:
-        cropped = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4)
-
-    # BGR → RGB for PIL
-    if cropped.ndim == 3 and cropped.shape[2] == 3:
-        cropped = cropped[:, :, ::-1]
-
-    return Image.fromarray(cropped)
+    resized = cv2.resize(img_array, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4)
+    result = resized[:, :, ::-1]  # BGR → RGB
+    return Image.fromarray(result)
 
 
 # ── 5. Export 5 print files ───────────────────────────────────────────────────
@@ -194,7 +168,7 @@ def export_print_files(img_array: np.ndarray, output_dir: str) -> list[str]:
     written = []
 
     for stem, target_w, target_h in PRINT_FORMATS:
-        pil_image = center_crop_resize(img_array, target_w, target_h)
+        pil_image = fit_and_pad(img_array, target_w, target_h)
 
         # Ensure RGB (handles palette or grayscale inputs)
         if pil_image.mode != "RGB":

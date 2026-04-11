@@ -51,17 +51,9 @@ def _warp_artwork(artwork_path: str, slot: dict, canvas_w: int, canvas_h: int) -
         np.linalg.norm(np.array(br) - np.array(tr))
     ))
 
-    # Load and resize artwork to fill the slot dimensions
+    # Resize artwork to exactly the slot dimensions
     artwork = _load_image_bgr(artwork_path)
-    src_h, src_w = artwork.shape[:2]
-    scale = max(w / src_w, h / src_h)
-    new_w, new_h = round(src_w * scale), round(src_h * scale)
-    artwork = cv2.resize(artwork, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
-
-    # Center crop to exact slot dimensions
-    x0 = (new_w - w) // 2
-    y0 = (new_h - h) // 2
-    artwork = artwork[y0:y0 + h, x0:x0 + w]
+    artwork = cv2.resize(artwork, (w, h), interpolation=cv2.INTER_LANCZOS4)
 
     # Source corners (flat rectangle of artwork)
     src_pts = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
@@ -94,50 +86,53 @@ def _composite(background: np.ndarray, warped: np.ndarray, mask: np.ndarray) -> 
 
 def generate_mockups(set_folder: str, images: list[str], output_base: str) -> list[str]:
     """
-    Generates mockup JPGs by warping artwork into pre-defined slot coordinates
-    on background JPGs. Fast — no PSD processing at runtime.
+    Generates mockup JPGs for every image in the set.
+    Each image gets all 5 mockups saved in its own subfolder (Print_1, Print_2, ...).
 
-    Returns list of written mockup JPG paths.
+    Output structure:
+        output_base/set_name/mockups/Print_1/set_name_mockup_1.jpg ... _mockup_5.jpg
+        output_base/set_name/mockups/Print_2/...
+
+    Returns list of all written mockup JPG paths.
     """
     set_name  = os.path.basename(set_folder)
-    out_dir   = os.path.join(output_base, set_name, "mockups")
-    os.makedirs(out_dir, exist_ok=True)
-
     config    = _load_config()
     written   = []
 
-    for mockup in config:
-        idx         = mockup["id"]
-        bg_path     = os.path.join(MOCKUP_DIR, mockup["background"])
-        slots       = mockup["slots"]
+    for img_idx, image_path in enumerate(images, start=1):
+        print_label = f"Print_{img_idx}"
+        out_dir     = os.path.join(output_base, set_name, "mockups", print_label)
+        os.makedirs(out_dir, exist_ok=True)
 
-        # Skip mockups with no coordinates defined yet
-        if not slots:
-            logging.warning(f"[{set_name}] Mockup {idx}: no slots defined — skipping")
-            continue
+        logging.info(f"[{set_name}] {print_label}: generating mockups for {os.path.basename(image_path)}")
 
-        if not os.path.isfile(bg_path):
-            logging.warning(f"[{set_name}] Mockup {idx}: background not found ({bg_path}) — skipping")
-            continue
+        for mockup in config:
+            idx     = mockup["id"]
+            bg_path = os.path.join(MOCKUP_DIR, mockup["background"])
+            slots   = mockup["slots"]
 
-        logging.info(f"[{set_name}] Mockup {idx}/{len(config)}: placing artwork on {mockup['background']}")
+            # Skip mockups with no coordinates defined yet
+            if not slots:
+                logging.warning(f"[{set_name}] Mockup {idx}: no slots defined — skipping")
+                continue
 
-        bg      = _load_image_bgr(bg_path)
-        canvas  = bg.copy()
-        h, w    = bg.shape[:2]
+            if not os.path.isfile(bg_path):
+                logging.warning(f"[{set_name}] Mockup {idx}: background not found ({bg_path}) — skipping")
+                continue
 
-        for slot_idx, slot in enumerate(slots):
-            image_path = images[slot_idx % len(images)]
-            warped, mask = _warp_artwork(image_path, slot, w, h)
-            canvas = _composite(canvas, warped, mask)
-            logging.info(f"[{set_name}]   Slot {slot_idx + 1}: placed {os.path.basename(image_path)}")
+            bg     = _load_image_bgr(bg_path)
+            canvas = bg.copy()
+            h, w   = bg.shape[:2]
 
-        # Convert BGR → RGB and save
-        result_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
-        pil_img    = Image.fromarray(result_rgb)
-        out_path   = os.path.join(out_dir, f"{set_name}_mockup_{idx}.jpg")
-        pil_img.save(out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI))
-        logging.info(f"[{set_name}] Saved → {os.path.basename(out_path)}")
-        written.append(out_path)
+            for slot_idx, slot in enumerate(slots):
+                warped, mask = _warp_artwork(image_path, slot, w, h)
+                canvas = _composite(canvas, warped, mask)
+
+            result_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+            pil_img    = Image.fromarray(result_rgb)
+            out_path   = os.path.join(out_dir, f"{set_name}_mockup_{idx}.jpg")
+            pil_img.save(out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI))
+            logging.info(f"[{set_name}]   {print_label} → mockup_{idx}.jpg saved")
+            written.append(out_path)
 
     return written
