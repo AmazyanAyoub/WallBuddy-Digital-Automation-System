@@ -65,12 +65,9 @@ def _warp_artwork(artwork_path: str, slot: dict, canvas_w: int, canvas_h: int) -
     M = cv2.getPerspectiveTransform(src_pts, dst_pts)
     warped = cv2.warpPerspective(artwork, M, (canvas_w, canvas_h))
 
-    # Create mask of the warped area (white polygon → black everywhere else)
-    # Dilate by 2px to cover sub-pixel edge gaps from perspective interpolation
+    # Create mask of the warped area
     mask = np.zeros((canvas_h, canvas_w), dtype=np.uint8)
     cv2.fillConvexPoly(mask, np.int32([tl, tr, br, bl]), 255)
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.dilate(mask, kernel, iterations=1)
 
     return warped, mask
 
