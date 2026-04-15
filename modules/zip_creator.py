@@ -7,50 +7,38 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import OUTPUT_DIR
 
 
-def create_zip(set_folder: str, output_base: str) -> str:
+def create_zip(atca_folder: str, atca_id: int, image_count: int) -> str:
     """
-    Zips all print files for a set into set_name.zip.
+    Zips all print files for a set into ATCA_000{id}.zip.
 
-    Reads from:  output_base/set_name/print_files/Print_N/*.jpg
-    Writes to:   output_base/set_name/set_name.zip
-
-    Internal ZIP structure:
-        Print 1/2x3_ratio_24x36.jpg
-        Print 1/3x4_ratio_18x24.jpg
-        ...
-        Print 2/...
+    Single image:    zips JPGs directly from atca_folder/
+    Multiple images: zips JPGs from atca_folder/ATCA_000{id}_N/ subfolders
 
     Returns the path to the created ZIP file.
     """
-    set_name      = os.path.basename(set_folder)
-    print_files_dir = os.path.join(output_base, set_name, "print_files")
-    zip_path      = os.path.join(output_base, set_name, f"{set_name}.zip")
-
-    if not os.path.isdir(print_files_dir):
-        raise FileNotFoundError(f"[{set_name}] print_files dir not found: {print_files_dir}")
-
-    # Collect Print_N folders sorted
-    print_folders = sorted(
-        [e for e in os.scandir(print_files_dir) if e.is_dir() and e.name.startswith("Print_")],
-        key=lambda e: int(e.name.split("_")[1])
-    )
-
-    if not print_folders:
-        raise ValueError(f"[{set_name}] No Print_N folders found in {print_files_dir}")
+    atca_name = f"ATCA_{atca_id:04d}"
+    zip_path  = os.path.join(atca_folder, f"{atca_name}.zip")
+    is_single = image_count == 1
 
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for folder_entry in print_folders:
-            # "Print_1" → "Print 1" inside the ZIP (space, not underscore)
-            folder_num   = folder_entry.name.split("_")[1]
-            zip_folder   = f"Print {folder_num}"
-
-            for file_entry in sorted(os.scandir(folder_entry.path), key=lambda e: e.name):
-                if not file_entry.is_file():
+        if is_single:
+            for entry in sorted(os.scandir(atca_folder), key=lambda e: e.name):
+                if entry.is_file() and entry.name.endswith(".jpg"):
+                    zf.write(entry.path, entry.name)
+                    logging.info(f"[{atca_name}] Zipped: {entry.name}")
+        else:
+            for idx in range(1, image_count + 1):
+                img_label  = f"{atca_name}_{idx}"
+                img_folder = os.path.join(atca_folder, img_label)
+                if not os.path.isdir(img_folder):
+                    logging.warning(f"[{atca_name}] Subfolder not found: {img_folder} — skipping")
                     continue
-                arcname = f"{zip_folder}/{file_entry.name}"
-                zf.write(file_entry.path, arcname)
-                logging.info(f"[{set_name}] Zipped: {arcname}")
+                for entry in sorted(os.scandir(img_folder), key=lambda e: e.name):
+                    if entry.is_file() and entry.name.endswith(".jpg"):
+                        arcname = f"{img_label}/{entry.name}"
+                        zf.write(entry.path, arcname)
+                        logging.info(f"[{atca_name}] Zipped: {arcname}")
 
     size_mb = os.path.getsize(zip_path) / (1024 * 1024)
-    logging.info(f"[{set_name}] ZIP created: {zip_path} ({size_mb:.1f} MB)")
+    logging.info(f"[{atca_name}] ZIP created: {zip_path} ({size_mb:.1f} MB)")
     return zip_path

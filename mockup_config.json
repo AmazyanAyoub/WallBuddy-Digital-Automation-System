@@ -41,10 +41,10 @@
       "background": "bg_4.jpg",
       "slots": [
         {
-          "top_left":     [416, 150],
-          "top_right":    [673, 149],
-          "bottom_right": [673, 510],
-          "bottom_left":  [416, 510]
+          "top_left":     [415, 148],
+          "top_right":    [674, 148],
+          "bottom_right": [674, 512],
+          "bottom_left":  [415, 512]
         }
       ]
     },
@@ -53,12 +53,18 @@
       "background": "bg_5.jpg",
       "slots": [
         {
-          "top_left":     [409, 148],
-          "top_right":    [675, 148],
-          "bottom_right": [675, 516],
-          "bottom_left":  [409, 516]
+          "top_left":     [407, 146],
+          "top_right":    [675, 146],
+          "bottom_right": [675, 518],
+          "bottom_left":  [407, 518]
         }
       ]
     }
-  ]
+  ],
+  "cover_slot": {
+    "top_left":     [295, 188],
+    "top_right":    [777, 188],
+    "bottom_right": [777, 869],
+    "bottom_left":  [295, 869]
+  }
 }

@@ -157,10 +157,11 @@ def fit_and_pad(img_array: np.ndarray, target_w: int, target_h: int) -> Image.Im
 
 # ── 5. Export 5 print files ───────────────────────────────────────────────────
 
-def export_print_files(img_array: np.ndarray, output_dir: str) -> list[str]:
+def export_print_files(img_array: np.ndarray, output_dir: str, prefix: str) -> list[str]:
     """
     Takes a BGR numpy array and writes 5 JPG files into output_dir,
     one per format defined in PRINT_FORMATS.
+    Each filename: {prefix}_{stem}.jpg
     Each file: JPEG quality=92, 300 DPI metadata, sRGB.
     Returns list of written file paths.
     """
@@ -170,11 +171,10 @@ def export_print_files(img_array: np.ndarray, output_dir: str) -> list[str]:
     for stem, target_w, target_h in PRINT_FORMATS:
         pil_image = fit_and_pad(img_array, target_w, target_h)
 
-        # Ensure RGB (handles palette or grayscale inputs)
         if pil_image.mode != "RGB":
             pil_image = pil_image.convert("RGB")
 
-        out_path = os.path.join(output_dir, f"{stem}.jpg")
+        out_path = os.path.join(output_dir, f"{prefix}_{stem}.jpg")
         pil_image.save(
             out_path,
             format="JPEG",
@@ -182,7 +182,7 @@ def export_print_files(img_array: np.ndarray, output_dir: str) -> list[str]:
             dpi=(DPI, DPI),
             icc_profile=_srgb_icc_profile(),
         )
-        logging.info(f"  Saved {stem}.jpg — {target_w}x{target_h}px")
+        logging.info(f"  Saved {prefix}_{stem}.jpg — {target_w}x{target_h}px")
         written.append(out_path)
 
     return written
@@ -203,47 +203,57 @@ def _srgb_icc_profile() -> bytes | None:
 
 # ── 6. Process one set ────────────────────────────────────────────────────────
 
-def process_set(set_folder: str, output_base: str) -> dict:
+def process_set(set_folder: str, output_base: str, atca_id: int, images: list[str] = None) -> dict:
     """
     Full pipeline for one set folder:
       - Finds all images
-      - For each image: detect → maybe upscale → center-crop resize → export 5 files
-      - Saves to output_base/<set_name>/print_files/Print_N/
+      - For each image: detect → maybe upscale → resize → export 5 files
+      - Single image:   output_base/ATCA_000{id}/ATCA_000{id}_{stem}.jpg
+      - Multiple images: output_base/ATCA_000{id}/ATCA_000{id}_{N}/ATCA_000{id}_{N}_{stem}.jpg
 
     Returns summary dict: {total, success, failed}
     """
-    set_name = os.path.basename(set_folder)
-    images   = get_images_in_set(set_folder)
+    set_name  = os.path.basename(set_folder)
+    if images is None:
+        images = get_images_in_set(set_folder)
+    atca_name = f"ATCA_{atca_id:04d}"
+    is_single = len(images) == 1
 
     if not images:
         logging.warning(f"[{set_name}] No images found — skipping")
         return {"total": 0, "success": 0, "failed": 0}
 
-    logging.info(f"[{set_name}] Found {len(images)} image(s)")
+    logging.info(f"[{set_name}] Found {len(images)} image(s) → {atca_name}")
 
     success = 0
     failed  = 0
 
     for idx, image_path in enumerate(images, start=1):
-        print_label = f"Print_{idx}"
-        out_dir     = os.path.join(output_base, set_name, "print_files", print_label)
-        img_name    = os.path.basename(image_path)
+        if is_single:
+            out_dir = os.path.join(output_base, atca_name)
+            prefix  = atca_name
+        else:
+            img_label = f"{atca_name}_{idx}"
+            out_dir   = os.path.join(output_base, atca_name, img_label)
+            prefix    = img_label
+
+        img_name = os.path.basename(image_path)
 
         try:
             should_upscale, longest = needs_upscale(image_path)
 
             if should_upscale:
-                logging.info(f"[{set_name}/{print_label}] {img_name} — longest side {longest}px → upscaling")
+                logging.info(f"[{atca_name}] {img_name} — longest side {longest}px → upscaling")
                 img_array = upscale_image(image_path, longest)
             else:
-                logging.info(f"[{set_name}/{print_label}] {img_name} — longest side {longest}px → no upscale needed")
+                logging.info(f"[{atca_name}] {img_name} — longest side {longest}px → no upscale needed")
                 img_array = load_as_numpy(image_path)
 
-            export_print_files(img_array, out_dir)
+            export_print_files(img_array, out_dir, prefix)
             success += 1
 
         except Exception as e:
-            logging.error(f"[{set_name}/{print_label}] FAILED — {img_name}: {e}")
+            logging.error(f"[{atca_name}] FAILED — {img_name}: {e}")
             failed += 1
 
     return {"total": len(images), "success": success, "failed": failed}
