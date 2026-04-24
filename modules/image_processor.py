@@ -213,11 +213,12 @@ def process_set(set_folder: str, output_base: str, atca_id: int, images: list[st
 
     Returns summary dict: {total, success, failed}
     """
-    set_name  = os.path.basename(set_folder)
+    set_name   = os.path.basename(set_folder)
     if images is None:
         images = get_images_in_set(set_folder)
-    atca_name = f"ATCA_{atca_id:04d}"
-    is_single = len(images) == 1
+    atca_name  = f"ATCA_{atca_id:04d}"
+    is_single  = len(images) == 1
+    hires_paths = []
 
     if not images:
         logging.warning(f"[{set_name}] No images found — skipping")
@@ -249,6 +250,14 @@ def process_set(set_folder: str, output_base: str, atca_id: int, images: list[st
                 logging.info(f"[{atca_name}] {img_name} — longest side {longest}px → no upscale needed")
                 img_array = load_as_numpy(image_path)
 
+            # Save high-res source for mockup generation (in temp/ so zip ignores it)
+            hires_path = os.path.join(output_base, atca_name, "temp", f"hires_{idx}.jpg")
+            os.makedirs(os.path.dirname(hires_path), exist_ok=True)
+            rgb = img_array[:, :, ::-1]
+            Image.fromarray(rgb).save(hires_path, format="JPEG", quality=95)
+            hires_paths.append(hires_path)
+            logging.info(f"[{atca_name}] Saved hires_{idx}.jpg for mockup generation")
+
             export_print_files(img_array, out_dir, prefix)
             success += 1
 
@@ -256,4 +265,4 @@ def process_set(set_folder: str, output_base: str, atca_id: int, images: list[st
             logging.error(f"[{atca_name}] FAILED — {img_name}: {e}")
             failed += 1
 
-    return {"total": len(images), "success": success, "failed": failed}
+    return {"total": len(images), "success": success, "failed": failed, "hires_paths": hires_paths}

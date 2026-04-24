@@ -37,27 +37,40 @@ def _build_service():
 
 def upload_zip(zip_path: str, atca_name: str) -> str:
     """
-    Uploads the ZIP directly into GOOGLE_DRIVE_FOLDER_ID.
-    Returns a direct download link — customer clicks and ZIP downloads immediately.
+    1. Creates a folder named atca_name inside GOOGLE_DRIVE_FOLDER_ID
+    2. Uploads the ZIP into that folder
+    3. Shares the folder (anyone with link can view)
+    4. Returns the folder URL — customer opens their own folder and downloads the ZIP
     """
     zip_filename = os.path.basename(zip_path)
     with _service_lock:
         service = _build_service()
 
+    # ── 1. Create customer folder ─────────────────────────────
+    folder_meta = {
+        "name"    : atca_name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents" : [GOOGLE_DRIVE_FOLDER_ID],
+    }
+    folder    = service.files().create(body=folder_meta, fields="id").execute()
+    folder_id = folder["id"]
+    logging.info(f"[{atca_name}] Drive folder created: {folder_id}")
+
+    # ── 2. Upload ZIP into that folder ────────────────────────
     file_meta = {
         "name"   : zip_filename,
-        "parents": [GOOGLE_DRIVE_FOLDER_ID],
+        "parents": [folder_id],
     }
     media = MediaFileUpload(zip_path, mimetype="application/zip", resumable=True)
-    uploaded = service.files().create(body=file_meta, media_body=media, fields="id").execute()
-    file_id  = uploaded["id"]
+    service.files().create(body=file_meta, media_body=media, fields="id").execute()
     logging.info(f"[{atca_name}] ZIP uploaded: {zip_filename}")
 
+    # ── 3. Share the folder ───────────────────────────────────
     service.permissions().create(
-        fileId=file_id,
+        fileId=folder_id,
         body={"type": "anyone", "role": "reader"},
     ).execute()
 
-    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    logging.info(f"[{atca_name}] Download URL: {download_url}")
-    return download_url
+    folder_url = f"https://drive.google.com/drive/folders/{folder_id}?usp=sharing"
+    logging.info(f"[{atca_name}] Folder URL: {folder_url}")
+    return folder_url

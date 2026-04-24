@@ -18,6 +18,7 @@ def scan_jobs(input_dir: str) -> list[str]:
     """
     Returns a list of jobs to process:
     - 'single' folder → each image inside becomes its own job (image path)
+    - 'set_3' folder  → images grouped in batches of 3, each batch is one job (tuple of 3 paths)
     - all other folders → treated as a set (folder path)
     """
     jobs = []
@@ -28,6 +29,40 @@ def scan_jobs(input_dir: str) -> list[str]:
             for img in sorted(os.scandir(entry.path), key=lambda e: e.name.lower()):
                 if img.is_file() and os.path.splitext(img.name)[1].lower() in IMAGE_EXTENSIONS:
                     jobs.append(img.path)
+        elif entry.name == "set_3":
+            images = [
+                img.path
+                for img in sorted(os.scandir(entry.path), key=lambda e: e.name.lower())
+                if img.is_file() and os.path.splitext(img.name)[1].lower() in IMAGE_EXTENSIONS
+            ]
+            if len(images) == 0:
+                logging.warning("[set_3] No images found — skipping")
+            elif len(images) % 3 != 0:
+                raise ValueError(
+                    f"[set_3] Image count must be a multiple of 3, got {len(images)}"
+                )
+            else:
+                logging.info(f"[set_3] {len(images)} images → {len(images) // 3} group(s) of 3")
+                for i in range(0, len(images), 3):
+                    jobs.append(tuple(images[i:i + 3]))
+        
+        elif entry.name == "set_4":
+            images = [
+                img.path
+                for img in sorted(os.scandir(entry.path), key=lambda e: e.name.lower())
+                if img.is_file() and os.path.splitext(img.name)[1].lower() in IMAGE_EXTENSIONS
+            ]
+            if len(images) == 0:
+                logging.warning("[set_4] No images found — skipping")
+            elif len(images) % 4 != 0:
+                raise ValueError(
+                    f"[set_4] Image count must be a multiple of 4, got {len(images)}"
+                )
+            else:
+                logging.info(f"[set_4] {len(images)} images → {len(images) // 4} group(s) of 4")
+                for i in range(0, len(images), 4):
+                    jobs.append(tuple(images[i:i + 4]))
+
         else:
             jobs.append(entry.path)
     return jobs
@@ -56,24 +91,42 @@ def _delete_print_files(atca_folder: str, atca_id: int, image_count: int) -> Non
             if not os.listdir(img_folder):
                 os.rmdir(img_folder)
 
+    # Delete temp/ folder (hires sources used for mockups)
+    import shutil
+    temp_folder = os.path.join(atca_folder, "temp")
+    if os.path.isdir(temp_folder):
+        shutil.rmtree(temp_folder)
+        logging.info(f"[{atca_name}] Deleted temp/ folder")
 
-def run_job(job: str) -> tuple[str, dict]:
+
+def run_job(job) -> tuple[str, dict]:
     """
     Full pipeline for one job:
-      - job is an image path  → single image (from 'single' folder)
-      - job is a folder path  → full set
+      - job is an image path   → single image (from 'single' folder), job_type='single'
+      - job is a tuple of paths → group of 3 images (from 'set_3' folder), job_type='set_3'
+      - job is a folder path   → full set, job_type='single'
     Steps: image processing → mockups → ZIP → delete prints → Drive upload → CSV
     """
-    is_single_image = os.path.isfile(job)
-
-    if is_single_image:
-        images      = [job]
-        set_folder  = os.path.dirname(job)
-        job_label   = os.path.splitext(os.path.basename(job))[0]
+    if isinstance(job, tuple):
+        images     = list(job)
+        set_folder = os.path.dirname(images[0])
+        job_label  = f"set_3_{os.path.splitext(os.path.basename(images[0]))[0]}"
+        job_type   = "set_3"
+    elif isinstance(job, tuple):
+        images     = list(job)
+        set_folder = os.path.dirname(images[0])
+        job_label  = f"set_4_{os.path.splitext(os.path.basename(images[0]))[0]}"
+        job_type   = "set_4"
+    elif os.path.isfile(job):
+        images     = [job]
+        set_folder = os.path.dirname(job)
+        job_label  = os.path.splitext(os.path.basename(job))[0]
+        job_type   = "single"
     else:
-        set_folder  = job
-        images      = get_images_in_set(set_folder)
-        job_label   = os.path.basename(set_folder)
+        set_folder = job
+        images     = get_images_in_set(set_folder)
+        job_label  = os.path.basename(set_folder)
+        job_type   = "single"
 
     atca_id     = get_and_increment()
     atca_name   = f"ATCA_{atca_id:04d}"
@@ -82,8 +135,9 @@ def run_job(job: str) -> tuple[str, dict]:
 
     # ── 1. Image processing ───────────────────────────────────────────────────
     try:
-        logging.info(f"[{job_label}] Step 1/5 — Image processing → {atca_name}")
+        logging.info(f"[{job_label}] Step 1/5 — Image processing → {atca_name} (type={job_type})")
         proc = process_set(set_folder, OUTPUT_DIR, atca_id, images=images)
+        hires_paths = proc.get("hires_paths", images)
         logging.info(f"[{atca_name}] Images: {proc['success']} ok / {proc['failed']} failed")
         if proc["success"] == 0:
             raise RuntimeError("No images processed successfully")
@@ -95,7 +149,7 @@ def run_job(job: str) -> tuple[str, dict]:
     # ── 2. Mockup generation ──────────────────────────────────────────────────
     try:
         logging.info(f"[{atca_name}] Step 2/5 — Mockup generation")
-        mockup_paths = generate_mockups(set_folder, images, OUTPUT_DIR, atca_id)
+        mockup_paths = generate_mockups(set_folder, hires_paths, OUTPUT_DIR, atca_id, job_type=job_type)
         logging.info(f"[{atca_name}] {len(mockup_paths)} mockup(s) generated")
     except Exception as e:
         logging.error(f"[{atca_name}] Mockup generation failed: {e}")
