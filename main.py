@@ -62,6 +62,22 @@ def scan_jobs(input_dir: str) -> list[str]:
                 logging.info(f"[set_4] {len(images)} images → {len(images) // 4} group(s) of 4")
                 for i in range(0, len(images), 4):
                     jobs.append(tuple(images[i:i + 4]))
+        elif entry.name == "set_6":
+            images = [
+                img.path
+                for img in sorted(os.scandir(entry.path), key=lambda e: e.name.lower())
+                if img.is_file() and os.path.splitext(img.name)[1].lower() in IMAGE_EXTENSIONS
+            ]
+            if len(images) == 0:
+                logging.warning("[set_6] No images found — skipping")
+            elif len(images) % 6 != 0:
+                raise ValueError(
+                    f"[set_6] Image count must be a multiple of 6, got {len(images)}"
+                )
+            else:
+                logging.info(f"[set_6] {len(images)} images → {len(images) // 6} group(s) of 6")
+                for i in range(0, len(images), 6):
+                    jobs.append(tuple(images[i:i + 6]))
 
         else:
             jobs.append(entry.path)
@@ -107,16 +123,21 @@ def run_job(job) -> tuple[str, dict]:
       - job is a folder path   → full set, job_type='single'
     Steps: image processing → mockups → ZIP → delete prints → Drive upload → CSV
     """
-    if isinstance(job, tuple):
+    if isinstance(job, tuple) and len(job) == 3:
         images     = list(job)
         set_folder = os.path.dirname(images[0])
         job_label  = f"set_3_{os.path.splitext(os.path.basename(images[0]))[0]}"
         job_type   = "set_3"
-    elif isinstance(job, tuple):
+    elif isinstance(job, tuple) and len(job) == 4:
         images     = list(job)
         set_folder = os.path.dirname(images[0])
         job_label  = f"set_4_{os.path.splitext(os.path.basename(images[0]))[0]}"
         job_type   = "set_4"
+    elif isinstance(job, tuple) and len(job) == 6:
+        images     = list(job)
+        set_folder = os.path.dirname(images[0])
+        job_label  = f"set_6_{os.path.splitext(os.path.basename(images[0]))[0]}"
+        job_type   = "set_6"
     elif os.path.isfile(job):
         images     = [job]
         set_folder = os.path.dirname(job)
@@ -165,22 +186,22 @@ def run_job(job) -> tuple[str, dict]:
         return job_label, result
 
     # ── 4. Google Drive upload ────────────────────────────────────────────────
-    try:
-        logging.info(f"[{atca_name}] Step 4/5 — Google Drive upload")
-        drive_link = upload_zip(zip_path, atca_name)
-    except Exception as e:
-        logging.error(f"[{atca_name}] Drive upload failed: {e}")
-        result["error"] = str(e)
-        return job_label, result
+    # try:
+    #     logging.info(f"[{atca_name}] Step 4/5 — Google Drive upload")
+    #     drive_link = upload_zip(zip_path, atca_name)
+    # except Exception as e:
+    #     logging.error(f"[{atca_name}] Drive upload failed: {e}")
+    #     result["error"] = str(e)
+    #     return job_label, result
 
-    # ── 5. CSV row ────────────────────────────────────────────────────────────
-    try:
-        logging.info(f"[{atca_name}] Step 5/5 — Writing CSV row")
-        append_row(atca_name=atca_name, drive_link=drive_link)
-    except Exception as e:
-        logging.error(f"[{atca_name}] CSV write failed: {e}")
-        result["error"] = str(e)
-        return job_label, result
+    # # ── 5. CSV row ────────────────────────────────────────────────────────────
+    # try:
+    #     logging.info(f"[{atca_name}] Step 5/5 — Writing CSV row")
+    #     append_row(atca_name=atca_name, drive_link=drive_link)
+    # except Exception as e:
+    #     logging.error(f"[{atca_name}] CSV write failed: {e}")
+    #     result["error"] = str(e)
+    #     return job_label, result
 
     result["success"] = True
     logging.info(f"[{atca_name}] Pipeline complete")

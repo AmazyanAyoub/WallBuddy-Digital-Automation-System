@@ -29,3 +29,5 @@ pyenv-win
 Thumbs.db
 
 token.pickle
+
+*.json

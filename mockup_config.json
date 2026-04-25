@@ -139,7 +139,7 @@
             "top_left":     [772, 210],
             "top_right":    [966, 180],
             "bottom_right": [966, 506],
-            "bottom_left":  [732, 505]
+            "bottom_left":  [772, 505]
           }
         ]
       },
@@ -195,9 +195,9 @@
     "cover_slots": [
       {
         "top_left":     [52, 347],
-        "top_right":    [354, 347],
-        "bottom_right": [354, 735],
-        "bottom_left":  [52, 735]
+        "top_right":    [350, 347],
+        "bottom_right": [350, 738],
+        "bottom_left":  [52, 736]
       },
       {
         "top_left":     [394, 347],
@@ -228,8 +228,8 @@
           {
             "top_left":     [401, 124],
             "top_right":    [544, 145],
-            "bottom_right": [544, 330],
-            "bottom_left":  [401, 332]
+            "bottom_right": [544, 333],
+            "bottom_left":  [401, 325]
           },
           {
             "top_left":     [199, 350],
@@ -288,8 +288,8 @@
           {
             "top_left":     [570, 94],
             "top_right":    [750, 94],
-            "bottom_right": [750, 592],
-            "bottom_left":  [570, 592]
+            "bottom_right": [750, 319],
+            "bottom_left":  [570, 319]
           },
           {
             "top_left":     [343, 369],
@@ -390,6 +390,258 @@
         "top_right":    [861, 559],
         "bottom_right": [861, 949],
         "bottom_left":  [562, 949]
+      }
+    ]
+  },
+  "set_6":{
+    "mockups": [
+      {
+        "id": 1,
+        "background": "bg_1.jpg",
+        "slots": [
+          {
+            "top_left":     [419, 151],
+            "top_right":    [560, 126],
+            "bottom_right": [560, 354],
+            "bottom_left":  [419, 365]
+          },
+          {
+            "top_left":     [592, 122],
+            "top_right":    [758, 95],
+            "bottom_right": [758, 340],
+            "bottom_left":  [592, 353]
+          },
+          {
+            "top_left":     [794, 89],
+            "top_right":    [989, 56],
+            "bottom_right": [989, 326],
+            "bottom_left":  [794, 338]
+          },
+          {
+            "top_left":     [418, 395],
+            "top_right":    [562, 388],
+            "bottom_right": [560, 616],
+            "bottom_left":  [418, 611]
+          },
+          {
+            "top_left":     [592, 385],
+            "top_right":    [756, 377],
+            "bottom_right": [756, 625],
+            "bottom_left":  [590, 618]
+          },
+          {
+            "top_left":     [793, 376],
+            "top_right":    [989, 366],
+            "bottom_right": [986, 635],
+            "bottom_left":  [792, 625]
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "background": "bg_2.jpg",
+        "slots": [
+          {
+            "top_left":     [260, 125],
+            "top_right":    [434, 125],
+            "bottom_right": [434, 347],
+            "bottom_left":  [262, 347]
+          },
+          {
+            "top_left":     [476, 124],
+            "top_right":    [648, 124],
+            "bottom_right": [648, 347],
+            "bottom_left":  [475, 349]
+          },
+          {
+            "top_left":     [690, 127],
+            "top_right":    [862, 127],
+            "bottom_right": [862, 349],
+            "bottom_left":  [690, 349]
+          },
+          {
+            "top_left":     [263, 397],
+            "top_right":    [434, 397],
+            "bottom_right": [434, 617],
+            "bottom_left":  [263, 617]
+          },
+          {
+            "top_left":     [478, 397],
+            "top_right":    [647, 397],
+            "bottom_right": [647, 617],
+            "bottom_left":  [478, 617]
+          },
+          {
+            "top_left":     [691, 397],
+            "top_right":    [860, 397],
+            "bottom_right": [860, 617],
+            "bottom_left":  [691, 617]
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "background": "bg_3.jpg",
+        "slots": [
+          {
+            "top_left":     [120, 88],
+            "top_right":    [300, 112],
+            "bottom_right": [300, 362],
+            "bottom_left":  [120, 354]
+          },
+          {
+            "top_left":     [341, 119],
+            "top_right":    [493, 140],
+            "bottom_right": [492, 372],
+            "bottom_left":  [341, 365]
+          },
+          {
+            "top_left":     [529, 146],
+            "top_right":    [661, 166],
+            "bottom_right": [660, 382],
+            "bottom_left":  [529, 376]
+          },
+          {
+            "top_left":     [122, 401],
+            "top_right":    [298, 404],
+            "bottom_right": [298, 655],
+            "bottom_left":  [121, 666]
+          },
+          {
+            "top_left":     [340, 408],
+            "top_right":    [492, 413],
+            "bottom_right": [492, 644],
+            "bottom_left":  [338, 655]
+          },
+          {
+            "top_left":     [529, 413],
+            "top_right":    [660, 418],
+            "bottom_right": [660, 632],
+            "bottom_left":  [533, 632]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "background": "bg_4.jpg",
+        "slots": [
+          {
+            "top_left":     [373, 151],
+            "top_right":    [506, 137],
+            "bottom_right": [506, 324],
+            "bottom_left":  [373, 331]
+          },
+          {
+            "top_left":     [546, 132],
+            "top_right":    [692, 115],
+            "bottom_right": [692, 314],
+            "bottom_left":  [546, 322]
+          },
+          {
+            "top_left":     [736, 109],
+            "top_right":    [899, 91],
+            "bottom_right": [901, 304],
+            "bottom_left":  [736, 312]
+          },
+          {
+            "top_left":     [373, 374],
+            "top_right":    [506, 367],
+            "bottom_right": [505, 554],
+            "bottom_left":  [372, 554]
+          },
+          {
+            "top_left":     [545, 366],
+            "top_right":    [692, 359],
+            "bottom_right": [694, 556],
+            "bottom_left":  [545, 558]
+          },
+          {
+            "top_left":     [737, 358],
+            "top_right":    [900, 349],
+            "bottom_right": [900, 558],
+            "bottom_left":  [736, 557]
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "background": "bg_5.jpg",
+        "slots": [
+          {
+            "top_left":     [376, 56],
+            "top_right":    [535, 56],
+            "bottom_right": [535, 265],
+            "bottom_left":  [376, 265]
+          },
+          {
+            "top_left":     [575, 56],
+            "top_right":    [734, 56],
+            "bottom_right": [734, 265],
+            "bottom_left":  [575, 265]
+          },
+          {
+            "top_left":     [770, 56],
+            "top_right":    [930, 56],
+            "bottom_right": [930, 265],
+            "bottom_left":  [770, 265]
+          },
+          {
+            "top_left":     [376, 306],
+            "top_right":    [535, 305],
+            "bottom_right": [535, 514],
+            "bottom_left":  [376, 514]
+          },
+          {
+            "top_left":     [575, 305],
+            "top_right":    [734, 305],
+            "bottom_right": [734, 514],
+            "bottom_left":  [575, 514]
+          },
+          {
+            "top_left":     [770, 308],
+            "top_right":    [930, 308],
+            "bottom_right": [930, 514],
+            "bottom_left":  [770, 514]
+          }
+        ]
+      }
+    ],
+    "cover_slots": [
+      {
+        "top_left":     [97, 156],
+        "top_right":    [352, 156],
+        "bottom_right": [353, 5010],
+        "bottom_left":  [96, 510]
+      },
+      {
+        "top_left":     [413, 156],
+        "top_right":    [668, 156],
+        "bottom_right": [670, 510],
+        "bottom_left":  [413, 510]
+      },
+      {
+        "top_left":     [731, 156],
+        "top_right":    [986, 156],
+        "bottom_right": [986, 510],
+        "bottom_left":  [730, 510]
+      },
+      {
+        "top_left":     [96, 569],
+        "top_right":    [353, 569],
+        "bottom_right": [354, 909],
+        "bottom_left":  [95, 909]
+      },
+      {
+        "top_left":     [414, 569],
+        "top_right":    [670, 569],
+        "bottom_right": [670, 909],
+        "bottom_left":  [414, 909]
+      },
+      {
+        "top_left":     [731, 569],
+        "top_right":    [984, 569],
+        "bottom_right": [985, 909],
+        "bottom_left":  [730, 909]
       }
     ]
   }

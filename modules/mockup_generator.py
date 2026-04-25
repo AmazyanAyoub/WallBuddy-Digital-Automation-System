@@ -142,7 +142,17 @@ def generate_mockups(
             atca_name=atca_name,
             written=written,
         )
-
+    elif job_type == "set_6":
+        _generate_set6(
+            images=images,
+            mockup_cfg=mockup_cfg,
+            mockup_bg_dir=mockup_bg_dir,
+            cover_slots=config["cover_slots"],
+            cover_dir=cover_dir,
+            out_dir=out_dir,
+            atca_name=atca_name,
+            written=written,
+        )
     return written
 
 
@@ -193,7 +203,7 @@ def _generate_single(
             logging.warning(f"[{atca_name}] bg_6.png not found — skipping mockup 6")
 
         # Mockup 7: cycling cover
-        cover_idx  = get_next_cover()
+        cover_idx  = get_next_cover(job_type="single")
         cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.png")
         if not os.path.isfile(cover_path):
             cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.jpg")
@@ -252,7 +262,7 @@ def _generate_set3(images, mockup_cfg, mockup_bg_dir, cover_slots, cover_dir, ou
         logging.warning(f"[{atca_name}] set_3 bg_6.jpg not found — skipping mockup 6")
 
     # Cover mockup: 3 images placed into 3 cover slots
-    cover_idx  = get_next_cover()
+    cover_idx  = get_next_cover(job_type="set_3")
     cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.png")
     if not os.path.isfile(cover_path):
         cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.jpg")
@@ -311,7 +321,7 @@ def _generate_set4(images, mockup_cfg, mockup_bg_dir, cover_slots, cover_dir, ou
     else:
         logging.warning(f"[{atca_name}] set_4 bg_6.jpg not found — skipping mockup 6")
 
-    cover_idx  = get_next_cover()
+    cover_idx  = get_next_cover(job_type="set_4")
     cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.png")
     if not os.path.isfile(cover_path):
         cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.jpg")
@@ -323,6 +333,64 @@ def _generate_set4(images, mockup_cfg, mockup_bg_dir, cover_slots, cover_dir, ou
         out_path   = os.path.join(out_dir, f"{atca_name}_mockup_cover.jpg")
         Image.fromarray(result_rgb).save(out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI))
         logging.info(f"[{atca_name}]   set_4 mockup_cover.jpg saved (cover {cover_idx}.png)")
+        written.append(out_path)
+    else:
+        logging.warning(f"[{atca_name}] cover/{cover_idx}.png not found — skipping cover mockup")
+
+
+def _generate_set6(images, mockup_cfg, mockup_bg_dir, cover_slots, cover_dir, out_dir, atca_name, written):
+    """
+    Each mockup background has 6 slots — one per image in the group.
+    All 6 images are composited onto the same canvas per background.
+    """
+
+    for mockup in mockup_cfg:
+        idx     = mockup["id"]
+        bg_path = os.path.join(mockup_bg_dir, mockup["background"])
+        slots   = mockup["slots"]
+
+        if len(slots) < 6:
+            logging.warning(f"[{atca_name}] set_6 mockup {idx}: needs 6 slots, found {len(slots)} — skipping")
+            continue
+        if not os.path.isfile(bg_path):
+            logging.warning(f"[{atca_name}] set_6 mockup {idx}: background not found ({bg_path}) — skipping")
+            continue
+
+        canvas = _load_image_bgr(bg_path)
+        for img_path, slot in zip(images, slots):
+            _place_artwork(canvas, img_path, slot)
+
+        result_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+        out_path   = os.path.join(out_dir, f"{atca_name}_mockup_{idx}.jpg")
+        Image.fromarray(result_rgb).save(out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI))
+        logging.info(f"[{atca_name}]   set_6 mockup_{idx}.jpg saved")
+        written.append(out_path)
+
+    bg_6_path = os.path.join(mockup_bg_dir, "bg_6.jpg")
+    if os.path.isfile(bg_6_path):
+        bg_6 = _load_image_bgr(bg_6_path)
+        out_path = os.path.join(out_dir, f"{atca_name}_mockup_6.jpg")
+        Image.fromarray(cv2.cvtColor(bg_6, cv2.COLOR_BGR2RGB)).save(
+            out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI)
+        )
+        logging.info(f"[{atca_name}]   set_6 mockup_6.jpg saved (bg_6 as-is)")
+        written.append(out_path)
+    else:
+        logging.warning(f"[{atca_name}] set_6 bg_6.jpg not found — skipping mockup 6")
+
+    
+    cover_idx  = get_next_cover(job_type="set_6")
+    cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.png")
+    if not os.path.isfile(cover_path):
+        cover_path = os.path.join(cover_dir, f"COVER_{cover_idx}.jpg")
+    if os.path.isfile(cover_path):
+        canvas = _load_image_bgr(cover_path)
+        for img_path, slot in zip(images, cover_slots):
+            _place_artwork(canvas, img_path, slot)
+        result_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+        out_path   = os.path.join(out_dir, f"{atca_name}_mockup_cover.jpg")
+        Image.fromarray(result_rgb).save(out_path, format="JPEG", quality=JPEG_QUALITY, dpi=(DPI, DPI))
+        logging.info(f"[{atca_name}]   set_6 mockup_cover.jpg saved (cover {cover_idx}.png)")
         written.append(out_path)
     else:
         logging.warning(f"[{atca_name}] cover/{cover_idx}.png not found — skipping cover mockup")
